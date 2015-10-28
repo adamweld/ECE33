@@ -115,26 +115,25 @@ input:	push	psw			; push all destroyed registers
 			add		a			; A has 8x
 			add		h			; A has 10x (10s place)
 			add		l			; add 1s and 1s
-			mov		l,a			; save final value in l
 			call 	bdos		; user SHOULD enter CR here; any input does the same thing
 			jmp		done
 			
 redo:	call 	bdos		; take input character
 			cpi 	cr			; check if CR
-			jz 		done		; if so jump done
+			jz 		d1	  	; if so jump done
 			mov		m,a			; if not move to mem
 			inx		h			  ; increase pointer
 			jmp		redo		; take next character
-done:	inx   h
+d1:  	inx   h
       mvi   a,'$'   ; save $ after input
       mov   m,a
-      pop 	b
+done: pop 	b
 			pop 	psw			; pop destroyed registers
 			ret					  ; return
 			
-messp: db 		'    The Magical sentence Discombobulator', LF, CR, 'Please enter a sentence: $'
-messw: db 		LF, CR, 'Now enter a word: $'
-messn: db 		LF, CR, 'To insert after: $'
+messp: db   '    The Magical sentence Discombobulator', LF, CR, 'Please enter a sentence: $'
+messw: db	  LF, CR, 'Now enter a word: $'
+messn: db 	LF, CR, 'To insert after: $'
 messd: db		LF, LF, CR, 'Discombobulator result: $'
 buffs: ds		41
 buffw: ds		20			; word buffer
