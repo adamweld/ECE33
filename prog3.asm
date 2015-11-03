@@ -11,32 +11,44 @@
 ;
       org   100h
       lxi   sp,sp0
-      mvi   c,sprint
+      mvi   b,10
+      lxi   h,n0
+      mvi   a,0
+clr:  mov   m,a
+      inx   h
+      dcr   b
+      jnz   clr
       lxi   d,m0
+      mvi   c,sprint
       call  bdos
       call  inpt
       lxi   d,m1
       call  bdos
       call  hist
+      jmp   boot
 
 ; input subroutine
 ; takes your goddamn inputs
 inpt: push  psw
       push  b
+      push  d
       push  h
+      lxi   d,0
       mvi   c,conin
 ir0:  call  bdos
       cpi   cr
       jz    idn
       sui   '0'
+      mov   e,a
       lxi   h,n0
-      dad   a
+      dad   d
       mov   a,m
       inr   a
       mov   m,a
       jmp   ir0
 
 idn:  pop   h
+      pop   d
       pop   b
       pop   psw
       ret
@@ -50,9 +62,10 @@ hist: push  psw
       mvi   b,'0'
       mvi   c,conout
       lxi   h,n0
-hr0:  mov   a,m
-      cpi   '$'
-      jz    hdn
+hr0:  mvi   e,lf
+      call  bdos
+      mvi   e,cr
+      call  bdos
       mov   e,b
       call  bdos
       mvi   e,':'
@@ -60,14 +73,18 @@ hr0:  mov   a,m
       mvi   e,' '
       call  bdos
       mvi   e,'|'
+      mov   a,m
+      cpi   0
+      jz    hr2
 hr1:  call  bdos
       dcr   a
       jnz   hr1
-      inx   h
+hr2:  inx   h
       inr   b
-      jmp   hr0
-hdn:  ret
-done: pop 	h
+      mov   a,b
+      cpi   40h
+      jnz   hr0
+hdn:  pop 	h
       pop   b
 			pop 	psw			; pop destroyed registers
 			ret					  ; return
@@ -75,9 +92,11 @@ done: pop 	h
 
 
 m0:   db    'The Number Analser Mk.13'
-      db    cr,lf,'enter some goddamn numbers shit$'
-      db    cr,lf,'type as many digits as you goddamn want:$'
-m1:   db    'numbers got straight analzed:',lf,cr,cr,'$'
+      db    cr,lf,'enter some goddamn numbers shit'
+      db    cr,lf,'gimme those digits: $'
+m1:   db    cr,lf,'numbers got straight analzed:',lf,cr,'$'
 n0:   ds    10      ; save space for 10 values
+      db    '$'
+      ds    20
 			sp0 	equ $		; stack address
 			end					  ; ends assembler
