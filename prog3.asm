@@ -82,7 +82,7 @@ hr1:  call  bdos
 hr2:  inx   h
       inr   b
       mov   a,b
-      cpi   40h
+      cpi   3Ah
       jnz   hr0
 hdn:  pop 	h
       pop   b
