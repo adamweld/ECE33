@@ -1,5 +1,5 @@
 ; Adam Weld
-; Program 2
+; Program 3
 ;
    bdos     equ    5           ; CP/M function call address
    boot     equ    0           ; address to get back to CP/M
@@ -25,6 +25,8 @@ clr:  mov   m,a
       lxi   d,m1
       call  bdos
       call  hist
+      lxi   d,m2
+      call  bdos
       jmp   boot
 
 ; input subroutine
@@ -38,6 +40,10 @@ inpt: push  psw
 ir0:  call  bdos
       cpi   cr
       jz    idn
+      cpi   30h
+      jc    ierr
+      cpi   3Ah
+      jnc   ierr   
       sui   '0'
       mov   e,a
       lxi   h,n0
@@ -46,7 +52,15 @@ ir0:  call  bdos
       inr   a
       mov   m,a
       jmp   ir0
-
+ierr: mvi   c,conout
+      mvi   e,8h
+      call  bdos
+      mvi   e,' '
+      call  bdos
+      mvi   e,8h
+      call  bdos
+      mvi   c,conin
+      jmp   ir0
 idn:  pop   h
       pop   d
       pop   b
@@ -95,6 +109,7 @@ m0:   db    'The Number Analser Mk.13'
       db    cr,lf,'enter some goddamn numbers shit'
       db    cr,lf,'gimme those digits: $'
 m1:   db    cr,lf,'numbers got straight analzed:',lf,cr,'$'
+m2:   db    cr,lf,'thank you for playing!$'
 n0:   ds    10      ; save space for 10 values
       db    '$'
       ds    20
