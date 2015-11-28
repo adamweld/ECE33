@@ -67,8 +67,10 @@ ir0:  call  bdos
       cpi   3Ah
       cnc   err  
       jnc   ir0
-      inr   b
-      jmp   i0                 ; loop back
+      call  x10                 ; multiply HL by 10
+      sui   '0'                 ; convert ascii input to numeric
+      dad   a                   ; add A to HL
+      jmp   ir0                 ; loop back
 i1:   push  psw
       mov   d,h
       mov   e,l
