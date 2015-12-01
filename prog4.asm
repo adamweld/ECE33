@@ -1,6 +1,6 @@
 ; Adam Weld
-; Program 3
-; Number Analizer and Histogram
+; Program 4
+; Simple Calculator
 ;
       bdos     equ    5         ; CP/M function call address
       boot     equ    0         ; address to get back to CP/M
@@ -25,32 +25,35 @@ r0:   mvi   e,lf
       call  bdos
       call  bdos                ; print both >>
       call  inpt                ; take user input
-      cpi   0
+      cpi   '+'
       jz    add
-      cpi   2
+      cpi   cr
       jz    d0
-sub:  ;call  prnt
-      mov   e,a
-      call bdos
+sub:  mov   a,e
+      sub   l
+      mov   l,a
+      mov   a,d
+      sbb   h
+      mov   h,a
+      call  prnt
       jmp   r0
 add:  dad   d                   ; add contents of DE to HL
-      ;call  prnt
-      mov   e,a
-      call bdos
+      call  prnt
       jmp   r0
-d0:   jmp   boot                ; end program
+d0:   mvi   c,sprint
+      lxi   d,m1
+      call  bdos
+      jmp   boot                ; end program
 
 
 ; input subroutine
 ; takes user input numbers, ignores other characters
 ; input: keyboard [0-9]
-; output: first input in DE, second in HL, B is 0 for ADDITION and 1 for SUBTRACTION 2 for DONE
+; output: first input in DE, second in HL, passes through +,-, or CR in A 
 ; destroys: PSW, BC, DE, HL
 ; stack size: 10
 
 inpt: push  b                   ; push destroyed registers
-      push  d
-      push  h
       lxi   h,0                 ; zero HL pair
       mvi   a,0
       mvi   c,conin             ; set CP/M register for input
@@ -69,7 +72,10 @@ ir0:  call  bdos
       jnc   ir0
       call  x10                 ; multiply HL by 10
       sui   '0'                 ; convert ascii input to numeric
-      dad   a                   ; add A to HL
+      lxi   b,0
+      mov   c,a
+      dad   b                   ; add A to HL
+      mvi   c,conin
       jmp   ir0                 ; loop back
 i1:   push  psw
       mov   d,h
@@ -86,12 +92,13 @@ ir1:  call  bdos
       jnc   ir1
       call  x10                 ; multiply HL by 10
       sui   '0'                 ; convert ascii input to numeric
-      dad   a                   ; add A to HL
+      lxi   b,0
+      mov   c,a
+      dad   b                   ; add A to HL
+      mvi   c,conin
       jmp   ir1
 idn:  pop   psw
-i2:   pop   h
-      pop   d
-      pop   b                   ; pop destroyed registers
+i2:   pop   b                   ; pop destroyed registers
       ret
       
 ; error handling subroutine
@@ -134,18 +141,24 @@ x10:  push  psw		              ; store value of destroyed registers in stack
 
       mov   a,l
       add   a
+      mov   l,a
       mov   a,h
-      adc   a                   ; HL is 2X
+      adc   a                  
+      mov   h,a                 ; HL is 2X
 
       mov   a,l
       add   a
+      mov   l,a
       mov   a,h
-      adc   a                   ; HL is 4X
+      adc   a                  
+      mov   h,a                 ; HL is 4X
 
       mov   a,l
       add   a
+      mov   l,a
       mov   a,h
-      adc   a                   ; HL is 8x
+      adc   a                  
+      mov   h,a                 ; HL is 8x
 
       mov   a,l
       add   c
@@ -158,6 +171,36 @@ x10:  push  psw		              ; store value of destroyed registers in stack
       pop   psw                 ; return HL to original value
 			ret		  			            ; return to main function
 
+; d10 subroutine
+; divides number in BC pair by 10
+; input: BC pair
+; output: quotient in BC pair
+
+d10:  push  h
+      push  psw
+      xchg
+      ;mov   h,b
+      ;mov   l,c
+      mvi   c,10
+      lxi   d,0
+dr0:  mov   a,l
+      sub   c
+      mov   l,a
+      jnc   dr1
+      dcr   h
+dr1:  inx   h
+      mov   a,h
+      cpi   0
+      jnz   dr0
+      mov   a,l
+      cmp   c
+      jnc   dr0
+      xchg 
+      ;mov   b,h
+      ;mov   c,l
+      pop   psw
+      pop   h
+      ret
 
 ; print subroutine
 ; prints value of number in HL pair
@@ -168,31 +211,48 @@ x10:  push  psw		              ; store value of destroyed registers in stack
 prnt: push  b
       push  d
       push  h
-      lxi   b,10000
-
-pr0:  mvi   e,'0'
-      
-; sb16 subroutine
-; subtracts two 16 bit numbers
-; input: HL pair and DE pair
-; DE-HL in HL
-; destroys
-; stack size
-sb16: push  psw
-      push  d
-      mov   a,e
-      sub   l
+      jnc   pst
+      mvi   e,'-'
+      call  bdos
+      mov   a,l
+      cma
       mov   l,a
-      mov   a,d
-      sbb   h
+      mov   a,h
+      cma
       mov   h,a
-      pop   psw
+      inx   h
+pst:  lxi   b,10000
+pr0:  mvi   e,'0'
+pr1:  mov   a,l
+      sub   c
+      mov   l,a
+      mov   a,h
+      sbb   b
+      mov   h,a                 ; subtract BC from HL
+      jc    pr2
+      inr   e
+      jmp   pr1
+pr2:  dad   b
+      push  b
+      mvi   c,conout
+      call  bdos
+      pop   b
+      ; 0010011100010000
+      ; 0000001111101000
+      ;         01100100
+      ;         00001010
+      ;         00000001
+      d10
+      jmp   pr0
+
+pd0:  pop   h
       pop   d
+      pop   b
       ret
 
 m0:   db    'Simple Calculator',lf,lf,cr,'Type an addition or'
       db    ' subtraction problem, or enter to end$'
-m1L   db    'Thank you for using the Simple Calculator$'
+m1:   db    'Thank you for using the Simple Calculator$'
       ds    40                  ; give space for stack
 			sp0 	equ $		            ; stack address
 			end					              ; ends assembler
