@@ -34,10 +34,29 @@ sub:  mov   a,e
       mov   l,a
       mov   a,d
       sbb   h
+      mov   h,a      
+      jnc   pst
+      mvi   e,'-'
+      call  bdos
+      mov   a,l                 ; these lines complement the number
+      cma
+      mov   l,a
+      mov   a,h
+      cma
       mov   h,a
-      call  prnt
-      jmp   r0
+      inx   h
+      jmp   pst
 add:  dad   d                   ; add contents of DE to HL
+pst:  mvi   d,'0'
+      lxi   b,10000             ; start with value of 10000 
+      call  prnt
+      lxi   b,1000
+      call  prnt
+      lxi   b,100
+      call  prnt
+      lxi   b,10
+      call  prnt
+      lxi   b,1
       call  prnt
       jmp   r0
 d0:   mvi   c,sprint
@@ -132,96 +151,24 @@ err:  push  b
 
 x10:  push  psw		              ; store value of destroyed registers in stack
       push  b
-      mov   a,l
-      add   a
-      mov   c,a
-      mov   a,h
-      adc   a
-      mov   b,a                 ; BC holds double of original HL value 
-
-      mov   a,l
-      add   a
-      mov   l,a
-      mov   a,h
-      adc   a                  
-      mov   h,a                 ; HL is 2X
-
-      mov   a,l
-      add   a
-      mov   l,a
-      mov   a,h
-      adc   a                  
-      mov   h,a                 ; HL is 4X
-
-      mov   a,l
-      add   a
-      mov   l,a
-      mov   a,h
-      adc   a                  
-      mov   h,a                 ; HL is 8x
-
-      mov   a,l
-      add   c
-      mov   l,a
-      mov   a,h
-      adc   b
-      mov   h,a                 ; BC (2X) is added to HL (8X) for total of 10X
-
+      dad   h                   ; doubles HL pair
+      mov   b,h
+      mov   c,l                 ; copies value in HL to BC
+      dad   h                   ; HL is 4x
+      dad   h                   ; HL is 8x
+      dad   b                   ; HL is 8x + 2x = 10x
 			pop   b			            	; return BC to original value
       pop   psw                 ; return HL to original value
 			ret		  			            ; return to main function
 
-; d10 subroutine
-; divides number in BC pair by 10
-; input: BC pair
-; output: quotient in BC pair
-
-d10:  push  h
-      push  psw
-      xchg
-      ;mov   h,b
-      ;mov   l,c
-      mvi   c,10
-      lxi   d,0
-dr0:  mov   a,l
-      sub   c
-      mov   l,a
-      jnc   dr1
-      dcr   h
-dr1:  inx   h
-      mov   a,h
-      cpi   0
-      jnz   dr0
-      mov   a,l
-      cmp   c
-      jnc   dr0
-      xchg 
-      ;mov   b,h
-      ;mov   c,l
-      pop   psw
-      pop   h
-      ret
 
 ; print subroutine
-; prints value of number in HL pair
-; input: HL pair
-; output: prints to screen
+; prints value of number in HL pair, at power of BC pair
+; input: HL pair, BC pair
+; output: prints to screen one digit, removes digit that is printed from HL number
 ; destroys
 ; stack size
-prnt: push  b
-      push  d
-      push  h
-      jnc   pst
-      mvi   e,'-'
-      call  bdos
-      mov   a,l
-      cma
-      mov   l,a
-      mov   a,h
-      cma
-      mov   h,a
-      inx   h
-pst:  lxi   b,10000
+prnt: push  psw  
 pr0:  mvi   e,'0'
 pr1:  mov   a,l
       sub   c
@@ -231,23 +178,16 @@ pr1:  mov   a,l
       mov   h,a                 ; subtract BC from HL
       jc    pr2
       inr   e
+      mvi   d,0
       jmp   pr1
 pr2:  dad   b
-      push  b
+      mov   a,d
+      cmp   e
+      jnc   pd0
       mvi   c,conout
+      mvi   d,1
       call  bdos
-      pop   b
-      ; 0010011100010000
-      ; 0000001111101000
-      ;         01100100
-      ;         00001010
-      ;         00000001
-      d10
-      jmp   pr0
-
-pd0:  pop   h
-      pop   d
-      pop   b
+pd0:  pop   psw 
       ret
 
 m0:   db    'Simple Calculator',lf,lf,cr,'Type an addition or'
